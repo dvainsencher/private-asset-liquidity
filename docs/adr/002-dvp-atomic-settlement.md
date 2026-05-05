@@ -90,6 +90,27 @@ remembers to make. Compliance cannot be bypassed at the settlement primitive.
 This requires both legs on the same ledger. It is the correct model for same-ledger
 settlement.
 
+```mermaid
+sequenceDiagram
+    participant Seller
+    participant Escrow as Escrow Contract
+    participant Buyer
+
+    Seller->>Escrow: lockAsset(token)
+    Buyer->>Escrow: lockPayment(token)
+    alt both legs present — compliance passes
+        Escrow->>Escrow: validate KYC, suitability, restrictions
+        Escrow->>Buyer: release asset
+        Escrow->>Seller: release payment
+    else buyer fails to lock before timeout
+        Note over Escrow: timeout expires
+        Escrow->>Seller: refund asset
+    else compliance check fails
+        Escrow->>Seller: refund asset
+        Escrow->>Buyer: refund payment
+    end
+```
+
 **Hash Time Locked Contracts (HTLCs).** A cryptographic approach designed for
 cross-network scenarios. The seller generates a random secret and shares only its hash
 with the buyer. Two independent contracts are created — an asset contract on the
@@ -107,6 +128,32 @@ seller never reveals the secret, both contracts time out and both parties are re
 HTLCs are the mechanism that preserves atomic guarantees across a network boundary.
 For Drex integration — where the asset is on the permissioned ledger and payment is
 on the BCB's network — HTLC is the correct model.
+
+```mermaid
+sequenceDiagram
+    participant Seller
+    participant AC as Asset Contract
+    participant PC as Payment Contract
+    participant Buyer
+    Note over AC: Permissioned Ledger
+    Note over PC: Drex Network
+
+    Seller->>Seller: generate secret s, compute H=hash(s)
+    Buyer->>PC: lock payment against H (expires T_payment)
+    Seller->>AC: lock asset against H (expires T_asset)
+    Note over AC,PC: T_asset > T_payment — seller must claim first
+
+    alt seller reveals secret
+        Seller->>PC: claim payment, reveal s
+        Note over PC: s is now on-chain, publicly readable
+        Buyer->>AC: claim asset using s
+    else seller never reveals s
+        Note over PC: expires at T_payment
+        PC->>Buyer: refund payment
+        Note over AC: expires at T_asset
+        AC->>Seller: refund asset
+    end
+```
 
 **Transaction finality.** The atomic guarantee is only credible if finality is
 deterministic. In Proof of Work chains, finality is probabilistic: a block can be
@@ -135,6 +182,21 @@ The "no chargebacks" property follows mechanically from the protocol, not from p
 There is no reversal mechanism. A mistaken transaction requires a new correcting
 transaction — a forward correction, not a rollback. Operational processes and user
 interfaces must be designed around this.
+
+```mermaid
+sequenceDiagram
+    participant L as Leader Node
+    participant N as All Nodes
+    participant Ledger
+
+    L->>N: PRE-PREPARE(block, view, seq)
+    N->>N: broadcast PREPARE(block-hash)
+    Note over N: wait for 2f+1 matching PREPARE
+    N->>N: broadcast COMMIT(block-hash)
+    Note over N: wait for 2f+1 matching COMMIT
+    N->>Ledger: write block — FINAL
+    Note over Ledger: no reversal path in the protocol
+```
 
 ---
 
