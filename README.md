@@ -34,7 +34,7 @@ reporting are manual per-transaction processes that cannot scale with volume.
 
 A permissioned DLT architecture addresses all three simultaneously. Atomic DVP
 (Delivery vs. Payment) eliminates the T+2 window and reconciliation overhead.
-A shared ledger creates transparent, auditable price history. Programmable compliance
+A shared ledger creates an auditable, tamper-evident price history. Programmable compliance
 rules encoded in asset tokens turn regulatory requirements from per-transaction
 bottlenecks into a scalable infrastructure layer.
 
@@ -58,6 +58,28 @@ to institutional participants, and will eventually reduce settlement costs furth
 expanding the addressable market.
 
 Full analysis: [`docs/drex-strategy.md`](docs/drex-strategy.md)
+
+---
+
+## The Competitive Landscape
+
+Several platforms have attempted to address private asset liquidity in Brazil and
+internationally — Liqi, Vórtx QR, and BTG's tokenization infrastructure domestically;
+ADDX and tZERO abroad. The market hypothesis has been validated by their existence.
+What none has achieved is real secondary market liquidity at scale: meaningful bid
+depth, reliable price discovery, and transaction volume that makes the secondary
+market a credible exit option rather than a last resort.
+
+The gap is not product — it is the two-sided marketplace problem. A secondary market
+requires simultaneous supply (holders willing to sell) and demand (buyers with capital
+and appetite). Without both sides active, price discovery fails and the market remains
+thin regardless of how well the technology works. This is the cold start problem, and
+it is not solved by infrastructure alone. It requires a bootstrapping strategy that
+sequences which participants join first and in what order.
+
+The infrastructure layer described in this repository is necessary but not sufficient.
+The differentiating question is how the platform reaches the liquidity threshold where
+the network effect takes over.
 
 ---
 
@@ -88,6 +110,9 @@ docs/
                                   ledger architecture — not public chain, not central DB
     002-dvp-atomic-settlement.md  ADR-002: atomic DVP as the settlement primitive —
                                   escrow model, HTLC for cross-network, BFT finality
+    003-microservices-boundaries.md  ADR-003: service boundary decisions —
+                                  five services, compliance attestation model,
+                                  event-sourced settlement
   problem-analysis.md     Deep analysis of the illiquidity problem and why
                           DLT is structurally the right solution
   drex-strategy.md        How Drex fits the picture — ally, not competitor
@@ -121,32 +146,34 @@ python -m pytest src/test_mini_blockchain.py -v
 # 23 passed in 1.15s
 ```
 
-The next implementation layer — atomic DVP settlement engine and a simple order
-book for illiquid assets — is in progress and will demonstrate the core matching
-and settlement mechanics relevant to this platform's value proposition.
+The next implementation layer — `src/settlement/` and `src/orderbook/` — implements
+two of the five service boundaries defined in ADR-003: the settlement service as the
+sole DLT interface, and the order matching service as the decoupled price discovery
+layer. Both are in progress.
 
 ---
 
-## What I Understand That the Code Does Not Show
+## The Harder Problems
 
 The harder problems in this space are organizational and strategic, not algorithmic:
 
-**Scaling engineering without losing velocity** — the described moment of
-"strengthening governance and robustness without losing execution speed" is a
-specific organizational challenge. It requires introducing process where there
-was none, selectively, without creating the bureaucracy that kills startup momentum.
-The answer is not more process — it is the right process at the right boundaries.
+**Scaling engineering without losing velocity** — a production platform at the
+scaling inflection point faces a specific tension: introducing governance without
+the bureaucracy that kills execution velocity. The answer is not more process — it
+is the right process at the right boundaries, owned by the right teams.
 
-**Architectural decisions with long tails** — in a regulated financial platform,
-decisions about where to draw service boundaries, how to handle idempotency in
-settlement, and how to abstract the DLT layer for future Drex integration have
-consequences that compound over years. Getting them right early is worth significant
-short-term cost.
+**Architectural decisions with long tails** — ADR-003 documents the five service
+boundaries that matter in this platform: settlement (the sole DLT interface),
+compliance (central attestation model, kept off the hot path), valuation (canonical
+NAV ownership), investor state (legally material consistency), and order matching
+(decoupled from the ledger). In a regulated financial platform, these boundaries have
+consequences that compound over years — the wrong boundary is expensive to move once
+application code has grown around it.
 
 **Compliance as infrastructure, not feature** — regulatory requirements in this
 market (CVM 88, BCB frameworks, ANBIMA standards) are not a checklist. They are
-architectural constraints that belong in the platform layer, not bolted on top of
-the application layer.
+architectural constraints that belong in the platform layer, enforced at the
+settlement primitive, not bolted on top of the application layer.
 
 ---
 
