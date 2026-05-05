@@ -4,3 +4,5 @@ __pycache__/
 *.pyo
 .pytest_cache/
 CONTEXT.md
+CLAUDE.md
+docs/scaling-engineering.md
