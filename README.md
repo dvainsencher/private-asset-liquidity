@@ -83,13 +83,11 @@ moment of critical mass loses the race permanently.
 
 ```
 docs/
-The README change was just adding the `docs/adr/` entry to the repository structure block. Find this section in your `README.md`:
-
-```
-docs/
   adr/
-    001-permissioned-dlt.md  ADR-001: why permissioned DLT is the foundational
-                              ledger architecture — not public chain, not central DB
+    001-permissioned-dlt.md       ADR-001: why permissioned DLT is the foundational
+                                  ledger architecture — not public chain, not central DB
+    002-dvp-atomic-settlement.md  ADR-002: atomic DVP as the settlement primitive —
+                                  escrow model, HTLC for cross-network, BFT finality
   problem-analysis.md     Deep analysis of the illiquidity problem and why
                           DLT is structurally the right solution
   drex-strategy.md        How Drex fits the picture — ally, not competitor
